@@ -4,18 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>POG Trading Post Suggestions</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <h1>POG Trading Post Suggestions</h1>
-  <div class="buttons">
-    <button onclick="loadFlip()">Flip</button>
-    <button onclick="loadCraft()">Craft</button>
+  <div class="button-group">
+    <button onclick="loadFlips()">Flip</button>
+    <button onclick="loadCrafts()">Craft</button>
     <button onclick="loadSalvage()">Salvage</button>
     <button onclick="loadForge()">Mystic Forge</button>
     <button onclick="loadTrending()">Trending</button>
   </div>
-  <div id="loading" style="display:none">Loading data...</div>
+  <div id="loading" style="display:none;">Loading data, please wait...</div>
   <div id="results"></div>
   <script src="script.js"></script>
 </body>

@@ -1,82 +1,95 @@
-const apiBase = "https://api.guildwars2.com/v2";
+const loading = document.getElementById('loading');
+const results = document.getElementById('results');
 
-function showLoading(show) {
-  document.getElementById("loading").style.display = show ? "block" : "none";
+function showLoading() {
+  loading.style.display = 'block';
+  results.innerHTML = '';
 }
 
-function loadFlip() {
-  showLoading(true);
-  fetch(apiBase + "/commerce/prices")
-    .then(res => res.json())
-    .then(async ids => {
-      const subset = ids.slice(0, 100); // limit for demo
-      const data = await Promise.all(subset.map(id =>
-        fetch(apiBase + "/commerce/prices/" + id).then(r => r.json())
-      ));
-      const items = await Promise.all(subset.map(id =>
-        fetch(apiBase + "/items/" + id).then(r => r.json())
-      ));
-
-      const results = data.map((d, i) => {
-        const item = items[i];
-        if (!item || item.flags.includes("AccountBound") || !d.buys || !d.sells) return null;
-        const buy = d.buys.unit_price;
-        const sell = d.sells.unit_price;
-        const profit = Math.floor(sell * 0.85 - buy); // 15% TP fee
-        return { name: item.name, buy, sell, profit };
-      }).filter(x => x && x.profit > 10);
-
-      results.sort((a, b) => b.profit - a.profit);
-      renderResults("Top Flip Items", results.slice(0, 20));
-    })
-    .catch(err => {
-      document.getElementById("results").innerHTML = "Error loading flip data.";
-    })
-    .finally(() => showLoading(false));
+function hideLoading() {
+  loading.style.display = 'none';
 }
 
-function loadCraft() {
-  showLoading(true);
+function showResults(items) {
+  if (!items.length) {
+    results.innerHTML = '<p>No profitable items found.</p>';
+    return;
+  }
+  results.innerHTML = items.map(item => `
+    <div class="result-item">
+      <strong>${item.name}</strong><br/>
+      Buy: ${item.buy}c | Sell: ${item.sell}c | Profit: ${item.profit}c
+    </div>
+  `).join('');
+}
+
+async function loadFlips() {
+  showLoading();
+  try {
+    const listingsRes = await fetch('https://api.guildwars2.com/v2/commerce/listings');
+    const ids = await listingsRes.json();
+    const sampleIds = ids.slice(0, 20);
+
+    const [items, prices] = await Promise.all([
+      fetch(`https://api.guildwars2.com/v2/items?ids=${sampleIds.join(',')}`).then(r => r.json()),
+      fetch(`https://api.guildwars2.com/v2/commerce/prices?ids=${sampleIds.join(',')}`).then(r => r.json())
+    ]);
+
+    const resultsData = sampleIds.map(id => {
+      const item = items.find(i => i.id === id);
+      const price = prices.find(p => p.id === id);
+      if (!item || !price || !price.buys.unit_price || !price.sells.unit_price) return null;
+
+      const buy = price.buys.unit_price;
+      const sell = price.sells.unit_price;
+      const afterFees = Math.floor(sell * 0.85);
+      const profit = afterFees - buy;
+
+      return {
+        name: item.name,
+        buy: buy,
+        sell: sell,
+        profit: profit
+      };
+    }).filter(item => item && item.profit > 0);
+
+    hideLoading();
+    showResults(resultsData.sort((a, b) => b.profit - a.profit));
+  } catch (err) {
+    hideLoading();
+    results.innerHTML = '<p>Error fetching data. Try again later.</p>';
+    console.error(err);
+  }
+}
+
+function loadCrafts() {
+  showLoading();
   setTimeout(() => {
-    renderResults("Top Crafting Items (Coming Soon)", []);
-    showLoading(false);
+    hideLoading();
+    results.innerHTML = '<p>Crafting logic not implemented yet.</p>';
   }, 1000);
 }
 
 function loadSalvage() {
-  showLoading(true);
+  showLoading();
   setTimeout(() => {
-    renderResults("Top Salvage Items (Coming Soon)", []);
-    showLoading(false);
+    hideLoading();
+    results.innerHTML = '<p>Salvage logic not implemented yet.</p>';
   }, 1000);
 }
 
 function loadForge() {
-  showLoading(true);
+  showLoading();
   setTimeout(() => {
-    renderResults("Top Mystic Forge Recipes (Coming Soon)", []);
-    showLoading(false);
+    hideLoading();
+    results.innerHTML = '<p>Mystic Forge logic not implemented yet.</p>';
   }, 1000);
 }
 
 function loadTrending() {
-  showLoading(true);
+  showLoading();
   setTimeout(() => {
-    renderResults("Trending Items (Coming Soon)", []);
-    showLoading(false);
+    hideLoading();
+    results.innerHTML = '<p>Trending logic not implemented yet.</p>';
   }, 1000);
-}
-
-function renderResults(title, list) {
-  let html = "<h2>" + title + "</h2>";
-  if (!list.length) {
-    html += "<p>No data available.</p>";
-  } else {
-    html += "<table><tr><th>Name</th><th>Buy</th><th>Sell</th><th>Profit</th></tr>";
-    list.forEach(item => {
-      html += `<tr><td>${item.name}</td><td>${(item.buy/100).toFixed(2)}g</td><td>${(item.sell/100).toFixed(2)}g</td><td>${(item.profit/100).toFixed(2)}g</td></tr>`;
-    });
-    html += "</table>";
-  }
-  document.getElementById("results").innerHTML = html;
 }
