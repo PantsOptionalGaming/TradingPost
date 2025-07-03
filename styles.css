@@ -1,84 +1,78 @@
 body {
-  background-color: #1e1e1e;
-  color: #ffffff;
+  background-color: #222;
+  color: #f5d442; /* Yellow main title */
   font-family: Arial, sans-serif;
-  padding: 20px;
-  text-align: center;
+  padding: 1rem;
+  margin: 0;
 }
 
 h1 {
-  color: #ffd700;
-  font-weight: 900;
-  margin-bottom: 20px;
-  text-shadow: 0 0 8px #000;
+  color: #f5d442;
+  text-align: center;
+  margin-bottom: 1rem;
 }
 
 .buttons-container {
-  margin-bottom: 20px;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 
 .mode-btn {
-  background-color: #2c68c5;
-  color: #000;
-  font-weight: bold;
+  background-color: #0055ff;
   border: none;
-  padding: 12px 24px;
-  margin: 5px;
-  border-radius: 6px;
+  color: black;
+  font-weight: bold;
+  padding: 0.5rem 1rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  border-radius: 6px;
   font-size: 1rem;
-  box-shadow: 0 3px 8px rgba(44,104,197,0.6);
+  transition: all 0.25s ease;
+  box-shadow: 0 0 0 transparent;
 }
 
 .mode-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 15px 3px #3a8aff;
+  box-shadow: 0 0 10px #5599ff;
+  transform: scale(1.05);
 }
 
+.mode-btn:active,
 .mode-btn.active {
-  background-color: #1f3e7a;
-  color: #fff;
-  box-shadow: 0 0 20px 5px #1f3e7a;
+  background-color: #003399;
+  color: white;
+  box-shadow: 0 0 12px #2244aa;
 }
 
-.loading {
+#loading {
+  color: #f5d442;
+  text-align: center;
+  margin: 1rem 0;
+  font-weight: bold;
   font-size: 1.2rem;
-  color: #3ea6ff;
-  margin: 20px 0;
-  text-shadow: 0 0 6px #3ea6ff;
 }
 
-.hidden {
-  display: none;
-}
-
-.results {
-  margin-top: 25px;
-  max-width: 900px;
-  margin-left: auto;
-  margin-right: auto;
-  text-align: left;
-  font-size: 1rem;
-  color: #eee;
+#results {
+  margin-top: 1rem;
+  color: white;
+  max-width: 90vw;
+  overflow-x: auto;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 10px;
+  margin-top: 0.5rem;
 }
 
 th, td {
-  border: 1px solid #444;
-  padding: 8px 12px;
+  border: 1px solid #555;
+  padding: 0.4rem 0.6rem;
+  text-align: left;
 }
 
 th {
-  background-color: #2c68c5;
-  color: #000;
-}
-
-tr:nth-child(even) td {
-  background-color: #222;
+  background-color: #0044cc;
+  color: white;
 }
