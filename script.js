@@ -1,62 +1,34 @@
-const loading = document.getElementById('loading');
-const table = document.getElementById('results');
 
-function loadFlips() {
-  table.innerHTML = '';
-  loading.style.display = 'block';
+async function fetchData(type) {
+  const results = document.getElementById("results");
+  results.innerHTML = "<p>Loading " + type + " data...</p>";
 
-  fetch("https://api.guildwars2.com/v2/commerce/prices")
-    .then(res => res.json())
-    .then(ids => {
-      const sample = ids.slice(0, 100); // Sample first 100
-      return fetch(`https://api.guildwars2.com/v2/commerce/prices?ids=${sample.join(',')}`);
-    })
-    .then(res => res.json())
-    .then(prices => {
-      const profitable = prices.map(p => {
-        const sellPrice = p.sells.unit_price;
-        const buyPrice = p.buys.unit_price;
-        const profit = Math.floor(sellPrice * 0.85) - buyPrice;
-        return { id: p.id, buyPrice, sellPrice, profit };
-      }).filter(p => p.profit > 50);
+  try {
+    if (type === 'flip') {
+      const res = await fetch('https://api.guildwars2.com/v2/commerce/prices');
+      const ids = await res.json();
+      const sampleIds = ids.slice(0, 50); // For demo
+      const prices = await Promise.all(sampleIds.map(id => fetch(`https://api.guildwars2.com/v2/commerce/prices/${id}`).then(r => r.json())));
+      const items = await Promise.all(sampleIds.map(id => fetch(`https://api.guildwars2.com/v2/items/${id}`).then(r => r.json())));
 
-      return Promise.all(profitable.slice(0, 20).map(p =>
-        fetch(`https://api.guildwars2.com/v2/items/${p.id}`)
-          .then(res => res.json())
-          .then(item => ({ ...p, name: item.name }))
-      ));
-    })
-    .then(items => {
-      loading.style.display = 'none';
-      if (!items.length) return table.innerHTML = '<tr><td>No profitable items found</td></tr>';
-
-      table.innerHTML = '<tr><th>Item</th><th>Buy Price</th><th>Sell Price</th><th>Profit</th></tr>';
-      items.forEach(i => {
-        table.innerHTML += `<tr>
-          <td>${i.name}</td>
-          <td>${copper(i.buyPrice)}</td>
-          <td>${copper(i.sellPrice)}</td>
-          <td>${copper(i.profit)}</td>
-        </tr>`;
+      const data = prices.map((p, i) => {
+        const item = items[i];
+        const buy = p.buys.unit_price;
+        const sell = p.sells.unit_price;
+        const profit = Math.floor(sell * 0.85) - buy;
+        return { name: item.name, buy, sell, profit };
       });
-    })
-    .catch(err => {
-      loading.style.display = 'none';
-      table.innerHTML = `<tr><td>Error: ${err.message}</td></tr>`;
-    });
-}
 
-function loadCrafts() {
-  table.innerHTML = '';
-  loading.style.display = 'block';
-  table.innerHTML = '<tr><td>Crafting profit calculation coming soon...</td></tr>';
-  loading.style.display = 'none';
-}
+      const sorted = data.filter(i => i.profit > 50).sort((a, b) => b.profit - a.profit).slice(0, 20);
 
-function copper(value) {
-  if (!value) return '0c';
-  const gold = Math.floor(value / 10000);
-  const silver = Math.floor((value % 10000) / 100);
-  const copper = value % 100;
-  return \`\${gold}g \${silver}s \${copper}c\`;
+      results.innerHTML = "<h2>Top 20 Flip Opportunities</h2><ul>" +
+        sorted.map(i => `<li><strong>${i.name}</strong>: Buy @ ${i.buy}, Sell @ ${i.sell}, Profit = ${i.profit}</li>`).join("") +
+        "</ul>";
+    } else {
+      results.innerHTML = "<p>" + type + " feature coming soon...</p>";
+    }
+  } catch (err) {
+    console.error("Error fetching data", err);
+    results.innerHTML = "<p>Error loading data.</p>";
+  }
 }
