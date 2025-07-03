@@ -1,5 +1,5 @@
 const API_BASE = 'https://api.guildwars2.com/v2';
-const TP_BASE = 'https://api.guildwars2.com/v2/commerce/listings';
+const TP_LISTINGS = 'https://api.guildwars2.com/v2/commerce/listings';
 const TP_PRICES = 'https://api.guildwars2.com/v2/commerce/prices';
 const RECIPES = 'https://api.guildwars2.com/v2/recipes';
 const FORGE_RECIPES = 'https://api.guildwars2.com/v2/mystic-forge/recipes';
