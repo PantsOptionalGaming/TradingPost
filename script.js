@@ -163,3 +163,21 @@ async function handleCraft() {
 
   showLoading(false);
 }
+
+
+function showResults(data, title) {
+  const results = document.getElementById('results');
+  results.innerHTML = `<h2>Top ${title} Opportunities</h2><ul>` +
+    data.map(item =>
+      `<li><strong>${item.name}</strong> - Profit: ${formatCopper(item.profit)} | Cost: ${formatCopper(item.cost)} | Sell: ${formatCopper(item.sell)}<br>
+      <small>${item.ingredients || ''}</small></li>`
+    ).join('') + '</ul>';
+}
+
+function formatCopper(value) {
+  const gold = Math.floor(value / 10000);
+  const silver = Math.floor((value % 10000) / 100);
+  const copper = value % 100;
+  return `${gold}g ${silver}s ${copper}c`;
+}
+
