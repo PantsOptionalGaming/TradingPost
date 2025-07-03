@@ -1,78 +1,72 @@
 body {
-  background-color: #222;
-  color: #f5d442; /* Yellow main title */
+  background-color: #181818;
+  color: #ffd700; /* Yellow heading text */
   font-family: Arial, sans-serif;
-  padding: 1rem;
+  padding: 20px;
   margin: 0;
 }
 
 h1 {
-  color: #f5d442;
-  text-align: center;
-  margin-bottom: 1rem;
+  color: #ffd700;
+  margin-bottom: 20px;
 }
 
 .buttons-container {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
+  margin-bottom: 20px;
 }
 
 .mode-btn {
-  background-color: #0055ff;
-  border: none;
+  background-color: #1e40af; /* Blue */
   color: black;
   font-weight: bold;
-  padding: 0.5rem 1rem;
+  padding: 10px 18px;
+  border: none;
+  margin-right: 10px;
   cursor: pointer;
   border-radius: 6px;
-  font-size: 1rem;
-  transition: all 0.25s ease;
-  box-shadow: 0 0 0 transparent;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 6px #1e40af;
 }
 
 .mode-btn:hover {
-  box-shadow: 0 0 10px #5599ff;
-  transform: scale(1.05);
+  box-shadow: 0 0 12px #60a5fa;
+  transform: scale(1.1);
 }
 
-.mode-btn:active,
 .mode-btn.active {
-  background-color: #003399;
-  color: white;
-  box-shadow: 0 0 12px #2244aa;
+  background-color: #14337a; /* Darker blue for active */
+  box-shadow: 0 0 18px #3b82f6;
 }
 
 #loading {
-  color: #f5d442;
-  text-align: center;
-  margin: 1rem 0;
   font-weight: bold;
-  font-size: 1.2rem;
+  color: #60a5fa;
+  margin-bottom: 10px;
 }
 
 #results {
-  margin-top: 1rem;
+  margin-top: 10px;
   color: white;
-  max-width: 90vw;
-  overflow-x: auto;
 }
 
-table {
+.results-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 0.5rem;
+  background-color: #222;
+  color: #eee;
 }
 
-th, td {
-  border: 1px solid #555;
-  padding: 0.4rem 0.6rem;
+.results-table th, .results-table td {
+  padding: 8px 12px;
+  border: 1px solid #444;
   text-align: left;
 }
 
-th {
-  background-color: #0044cc;
-  color: white;
+.results-table th {
+  background-color: #1e40af;
+}
+
+.error {
+  color: #ff5555;
+  font-weight: bold;
 }
