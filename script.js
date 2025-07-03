@@ -93,3 +93,73 @@ function loadTrending() {
     results.innerHTML = '<p>Trending logic not implemented yet.</p>';
   }, 1000);
 }
+
+async function handleCraft() {
+  showLoading(true);
+
+  try {
+    const recipes = await fetchJSON('https://api.guildwars2.com/v2/recipes');
+    const limitedRecipes = recipes.slice(0, 200); // Limit to first 200 recipes for speed
+
+    const recipeData = await fetchJSON(`https://api.guildwars2.com/v2/recipes?ids=${limitedRecipes.join(',')}`);
+    const itemIds = [...new Set(recipeData.map(r => r.output_item_id).concat(recipeData.flatMap(r => r.ingredients.map(i => i.item_id))))];
+
+    const [itemDetails, prices] = await Promise.all([
+      fetchJSON(`https://api.guildwars2.com/v2/items?ids=${itemIds.join(',')}`),
+      fetchJSON(`https://api.guildwars2.com/v2/commerce/prices?ids=${itemIds.join(',')}`)
+    ]);
+
+    const priceMap = Object.fromEntries(prices.map(p => [p.id, p]));
+    const itemMap = Object.fromEntries(itemDetails.map(i => [i.id, i]));
+
+    const profits = [];
+
+    for (const recipe of recipeData) {
+      const outputPrice = priceMap[recipe.output_item_id];
+      const outputItem = itemMap[recipe.output_item_id];
+
+      if (!outputPrice || !outputPrice.sells || !outputPrice.sells.unit_price || outputItem.flags?.includes('AccountBound')) continue;
+
+      const sellPrice = outputPrice.sells.unit_price;
+      const sellAfterFee = Math.floor(sellPrice * 0.85);
+
+      let cost = 0;
+      let missing = false;
+
+      for (const ing of recipe.ingredients) {
+        const p = priceMap[ing.item_id];
+        if (!p || !p.buys || !p.buys.unit_price) {
+          missing = true;
+          break;
+        }
+        cost += p.buys.unit_price * ing.count;
+      }
+
+      if (missing) continue;
+
+      const profit = sellAfterFee - cost;
+      if (profit > 0) {
+        profits.push({
+          name: outputItem.name,
+          profit,
+          cost,
+          sell: sellPrice,
+          ingredients: recipe.ingredients.map(i => {
+            const ingItem = itemMap[i.item_id];
+            const ingPrice = priceMap[i.item_id]?.buys?.unit_price || 0;
+            return `${i.count}x ${ingItem?.name || 'Unknown'} @ ${formatCopper(ingPrice)}`;
+          }).join(', ')
+        });
+      }
+    }
+
+    profits.sort((a, b) => b.profit - a.profit);
+    const top = profits.slice(0, 20);
+
+    showResults(top, 'Crafting');
+  } catch (err) {
+    showError("Error loading crafting data: " + err.message);
+  }
+
+  showLoading(false);
+}
