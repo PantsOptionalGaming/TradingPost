@@ -1,21 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>POG Trading Post Suggestions</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>POG Trading Post Suggestions</title>
+<link
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  rel="stylesheet"
+/>
+<style>
+  body {
+    background-color: #333;
+    color: #ffeb3b; /* yellow */
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+  h1 {
+    color: #ffeb3b;
+  }
+  .button-container {
+    margin-bottom: 20px;
+  }
+  button {
+    background-color: #1e40af; /* blue */
+    color: black;
+    border: none;
+    padding: 10px 15px;
+    margin: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  button:hover {
+    box-shadow: 0 0 10px #60a5fa;
+    transform: scale(1.1);
+  }
+  button:active, button.active {
+    background-color: #1e3a8a; /* darker blue */
+    transform: scale(1.05);
+    box-shadow: none;
+  }
+  #loading {
+    display: none;
+    font-size: 18px;
+    color: #facc15; /* orange */
+    margin-bottom: 10px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  th, td {
+    border: 1px solid #666;
+    padding: 8px;
+    text-align: left;
+  }
+  th {
+    background-color: #1e3a8a;
+    color: #ffeb3b;
+  }
+</style>
 </head>
 <body>
-  <h1>POG Trading Post Suggestions</h1>
 
-  <div class="button-bar">
-    <button id="flipBtn">💰 Flip</button>
-    <button id="craftBtn">🛠️ Craft</button>
-  </div>
+<h1>POG Trading Post Suggestions</h1>
 
-  <div id="loading" style="display:none; margin-top: 20px; font-weight: bold; color: orange;">Loading...</div>
-  <div id="results" class="results"></div>
+<div class="button-container">
+  <button id="flipBtn"><i class="fas fa-money-bill-wave"></i> Flip</button>
+  <button id="craftBtn"><i class="fas fa-hammer"></i> Craft</button>
+  <button id="salvageBtn"><i class="fas fa-recycle"></i> Salvage</button>
+  <button id="forgeBtn"><i class="fas fa-fire"></i> Mystic Forge</button>
+  <button id="listBtn"><i class="fas fa-list"></i> List</button>
+  <!-- Add more buttons here as needed -->
+</div>
+
+<div id="loading">Loading...</div>
+
+<table id="resultsTable"></table>
+
+<script>
+  const buttons = {
+    flipBtn: 'flip',
+    craftBtn: 'craft',
+    salvageBtn: 'salvage',
+    forgeBtn: 'forge',
+    listBtn: 'list'
+  };
+
+  const loadingElem = document.getElementById('loading');
+  const resultsTable = document.getElementById('resultsTable');
+
+  Object.keys(buttons).forEach(id => {
+    const btn = document.getElementById(id);
+    btn.addEventListener('click', () => {
+      clearActiveButtons();
+      btn.classList.add('active');
+      loadData(buttons[id]);
+    });
+  });
+
+  function clearActiveButtons() {
+    Object.keys(buttons).forEach(id => {
+      document.getElementById(id).classList.remove('active');
+    });
+  }
+
+  async function loadData(action) {
+    loadingElem.style.display = 'block';
+    resultsTable.innerHTML = '';
+
+    try {
+      // Replace this URL with your actual API endpoint or script URL
+      const scriptURL = 'YOUR_API_URL_HERE';
+
+      const response = await fetch(`${scriptURL}?action=${action}`);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const data = await response.json();
+
+      renderTable(data);
+    } catch (error) {
+      resultsTable.innerHTML = `<tr><td colspan="5" style="color: red;">Error loading data: ${error.message}</td></tr>`;
+    } finally {
+      loadingElem.style.display = 'none';
+    }
+  }
+
+  function renderTable(data) {
+    if (!data || data.length === 0) {
+      resultsTable.innerHTML = '<tr><td>No results found.</td></tr>';
+      return;
+    }
+
+    let html = '<tr>';
+    // Assuming first row contains headers
+    Object.keys(data[0]).forEach(header => {
+      html += `<th>${header}</th>`;
+    });
+    html += '</tr>';
+
+    data.forEach(item => {
+      html += '<tr>';
+      Object.values(item).forEach(value => {
+        html += `<td>${value}</td>`;
+      });
+      html += '</tr>';
+    });
+
+    resultsTable.innerHTML = html;
+  }
+</script>
 </body>
-
 </html>
