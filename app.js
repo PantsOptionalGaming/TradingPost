@@ -1,125 +1,176 @@
-const loading = document.getElementById('loading');
-const results = document.getElementById('results');
-
-document.getElementById('flip-btn').addEventListener('click', () => {
-  showLoading();
-  fetchFlipData();
-});
-
-document.getElementById('craft-btn').addEventListener('click', () => {
-  showLoading();
-  showComingSoon('Crafting logic not yet implemented.');
-});
-
-document.getElementById('salvage-btn').addEventListener('click', () => {
-  showLoading();
-  showComingSoon('Salvage logic not yet implemented.');
-});
-
-document.getElementById('forge-btn').addEventListener('click', () => {
-  showLoading();
-  showComingSoon('Mystic Forge logic not yet implemented.');
-});
-
-function showLoading() {
-  loading.style.display = 'block';
-  results.innerHTML = '';
+// Helper to convert copper to Gold/Silver/Copper string
+function formatCoins(copper) {
+  if (typeof copper !== 'number' || copper < 0) return '-';
+  const gold = Math.floor(copper / 10000);
+  const silver = Math.floor((copper % 10000) / 100);
+  const copperRemainder = copper % 100;
+  return `${gold}g ${silver}s ${copperRemainder}c`;
 }
 
-function hideLoading() {
-  loading.style.display = 'none';
-}
-
-function showComingSoon(msg) {
-  hideLoading();
-  results.innerHTML = `<p>${msg}</p>`;
-}
-
+// Utility to fetch and parse JSON with error handling
 async function fetchJSON(url) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`API error: ${response.status}`);
-  return response.json();
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`API error: ${res.status}`);
+  }
+  return await res.json();
 }
 
+// Clear all active buttons styling
+function clearActiveButtons() {
+  document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+}
+
+// Show loading indicator
+function showLoading() {
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('results').innerHTML = '';
+}
+
+// Hide loading indicator
+function hideLoading() {
+  document.getElementById('loading').style.display = 'none';
+}
+
+// Show error message in results area
+function showError(message) {
+  const results = document.getElementById('results');
+  results.innerHTML = `<p style="color: red; font-weight:bold;">${message}</p>`;
+}
+
+// Fetch Flip data and display top 20 profitable flips
 async function fetchFlipData() {
+  showLoading();
   try {
+    // Get all prices
     const priceData = await fetchJSON('https://api.guildwars2.com/v2/commerce/prices');
-  const allItemIds = priceData
-    .map(entry => entry.id)
-    .filter(id => typeof id === 'number' && !isNaN(id))
-    .slice(0, 200);
+    // Filter valid ids only
+    const allItemIds = priceData
+      .map(entry => entry.id)
+      .filter(id => typeof id === 'number' && !isNaN(id))
+      .slice(0, 200); // limit to first 200 to reduce load
 
-
-    const detailChunks = [];
-    for (let i = 0; i < allItemIds.length; i += 100) {
-      const chunk = allItemIds.slice(i, i + 100);
-      const details = await fetchJSON(`https://api.guildwars2.com/v2/items?ids=${chunk.join(',')}`);
-      detailChunks.push(...details);
+    // Fetch detailed item info in chunks (max 200 IDs per request)
+    const chunkSize = 200;
+    const chunks = [];
+    for (let i = 0; i < allItemIds.length; i += chunkSize) {
+      const chunk = allItemIds.slice(i, i + chunkSize);
+      chunks.push(chunk);
     }
 
-    const combined = priceData
-      .filter(p => allItemIds.includes(p.id) && p.buys.unit_price > 0 && p.sells.unit_price > 0)
-      .map(p => {
-        const detail = detailChunks.find(d => d.id === p.id);
-        const profitRaw = p.sells.unit_price * 0.85 - p.buys.unit_price;
+    const itemDetails = [];
+    for (const chunk of chunks) {
+      const chunkData = await fetchJSON(`https://api.guildwars2.com/v2/items?ids=${chunk.join(',')}`);
+      itemDetails.push(...chunkData);
+    }
+
+    // Map id to item details for easy lookup
+    const itemMap = new Map(itemDetails.map(item => [item.id, item]));
+
+    // Calculate flips: sell_price - buy_price - fees (15% on sell price)
+    const flips = priceData
+      .filter(entry => {
+        const item = itemMap.get(entry.id);
+        if (!item) return false;
+        if (item.flags && item.flags.includes('AccountBound')) return false; // exclude bound items
+        if (!entry.buys || !entry.sells) return false;
+        if (!entry.buys.unit_price || !entry.sells.unit_price) return false;
+        return true;
+      })
+      .map(entry => {
+        const buyPrice = entry.buys.unit_price;
+        const sellPrice = entry.sells.unit_price;
+        const fee = Math.floor(sellPrice * 0.15);
+        const profit = sellPrice - buyPrice - fee;
         return {
-          id: p.id,
-          name: detail?.name || 'Unknown',
-          icon: detail?.icon || '',
-          buy: p.buys.unit_price,
-          sell: p.sells.unit_price,
-          profit: profitRaw
+          id: entry.id,
+          name: itemMap.get(entry.id).name,
+          buyPrice,
+          sellPrice,
+          fee,
+          profit,
         };
       })
-      .filter(item => item.profit > 0)
+      .filter(flip => flip.profit > 0) // only positive profit
       .sort((a, b) => b.profit - a.profit)
-      .slice(0, 20);
+      .slice(0, 20); // top 20
 
-    displayResults(combined);
-  } catch (err) {
     hideLoading();
-    results.innerHTML = `<p style="color:red;">Failed to load data: ${err.message}</p>`;
+
+    if (flips.length === 0) {
+      document.getElementById('results').innerHTML = '<p>No profitable flips found.</p>';
+      return;
+    }
+
+    // Build table
+    let html = `<table><thead><tr>
+      <th>Item</th>
+      <th>Buy Order</th>
+      <th>Sell Listing</th>
+      <th>Fee</th>
+      <th>Profit</th>
+      </tr></thead><tbody>`;
+
+    for (const flip of flips) {
+      html += `<tr>
+        <td>${flip.name}</td>
+        <td>${formatCoins(flip.buyPrice)}</td>
+        <td>${formatCoins(flip.sellPrice)}</td>
+        <td>${formatCoins(flip.fee)}</td>
+        <td>${formatCoins(flip.profit)}</td>
+      </tr>`;
+    }
+    html += '</tbody></table>';
+
+    document.getElementById('results').innerHTML = html;
+  } catch (e) {
+    hideLoading();
+    showError('Failed to load data: ' + e.message);
   }
 }
 
-function displayResults(items) {
+// Placeholder for other modes
+async function notImplemented() {
+  showError('Logic not yet implemented for this mode.');
   hideLoading();
-  if (!items.length) {
-    results.innerHTML = '<p>No profitable items found.</p>';
-    return;
-  }
-
-  const table = document.createElement('table');
-  table.innerHTML = `
-    <thead>
-      <tr>
-        <th>Item</th>
-        <th>Buy Order</th>
-        <th>Sell Price</th>
-        <th>Profit</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${items.map(item => `
-        <tr>
-          <td>
-            <img src="${item.icon}" alt="${item.name}" width="24" height="24" style="vertical-align:middle; margin-right:8px;" />
-            ${item.name}
-          </td>
-          <td>${formatCurrency(item.buy)}</td>
-          <td>${formatCurrency(item.sell)}</td>
-          <td style="color:lime;">${formatCurrency(item.profit)}</td>
-        </tr>
-      `).join('')}
-    </tbody>
-  `;
-  results.appendChild(table);
 }
 
-function formatCurrency(value) {
-  const gold = Math.floor(value / 10000);
-  const silver = Math.floor((value % 10000) / 100);
-  const copper = value % 100;
+// Setup event listeners
+function setupButtons() {
+  document.getElementById('flip-btn').addEventListener('click', async () => {
+    clearActiveButtons();
+    document.getElementById('flip-btn').classList.add('active');
+    await fetchFlipData();
+  });
 
-  return `${gold}🪙 ${silver}🥈 ${copper}🥉`;
+  document.getElementById('craft-btn').addEventListener('click', async () => {
+    clearActiveButtons();
+    document.getElementById('craft-btn').classList.add('active');
+    showLoading();
+    setTimeout(() => {
+      notImplemented();
+    }, 500);
+  });
+
+  document.getElementById('salvage-btn').addEventListener('click', async () => {
+    clearActiveButtons();
+    document.getElementById('salvage-btn').classList.add('active');
+    showLoading();
+    setTimeout(() => {
+      notImplemented();
+    }, 500);
+  });
+
+  document.getElementById('forge-btn').addEventListener('click', async () => {
+    clearActiveButtons();
+    document.getElementById('forge-btn').classList.add('active');
+    showLoading();
+    setTimeout(() => {
+      notImplemented();
+    }, 500);
+  });
 }
+
+window.onload = () => {
+  setupButtons();
+};
