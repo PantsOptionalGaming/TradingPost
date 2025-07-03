@@ -1,133 +1,125 @@
-const API_BASE = 'https://api.guildwars2.com/v2';
-const TP_LISTINGS = `${API_BASE}/commerce/listings`;
-const TP_PRICES = `${API_BASE}/commerce/prices`;
-const RECIPES = `${API_BASE}/recipes`;
-const FORGE_RECIPES = `${API_BASE}/recipes`; // correct endpoint for recipes
+const loading = document.getElementById('loading');
+const results = document.getElementById('results');
 
-let itemsData = [];
-let listingsData = [];
-let pricesData = [];
-let recipesData = [];
+document.getElementById('flip-btn').addEventListener('click', () => {
+  showLoading();
+  fetchFlipData();
+});
 
-const resultsEl = document.getElementById('results');
-const loadingEl = document.getElementById('loading');
+document.getElementById('craft-btn').addEventListener('click', () => {
+  showLoading();
+  showComingSoon('Crafting logic not yet implemented.');
+});
 
-function showLoading(show) {
-  loadingEl.classList.toggle('hidden', !show);
+document.getElementById('salvage-btn').addEventListener('click', () => {
+  showLoading();
+  showComingSoon('Salvage logic not yet implemented.');
+});
+
+document.getElementById('forge-btn').addEventListener('click', () => {
+  showLoading();
+  showComingSoon('Mystic Forge logic not yet implemented.');
+});
+
+function showLoading() {
+  loading.style.display = 'block';
+  results.innerHTML = '';
+}
+
+function hideLoading() {
+  loading.style.display = 'none';
+}
+
+function showComingSoon(msg) {
+  hideLoading();
+  results.innerHTML = `<p>${msg}</p>`;
 }
 
 async function fetchJSON(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
-  return res.json();
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`API error: ${response.status}`);
+  return response.json();
 }
 
-async function loadAllData() {
-  showLoading(true);
-  resultsEl.innerHTML = '';
-
+async function fetchFlipData() {
   try {
-    const [itemIds, listings, prices, recipes] = await Promise.all([
-      fetchJSON(`${API_BASE}/items?ids=all`),
-      fetchJSON(TP_LISTINGS),
-      fetchJSON(TP_PRICES),
-      fetchJSON(RECIPES),
-    ]);
+    // Step 1: Get list of tradeable item IDs
+    const priceData = await fetchJSON('https://api.guildwars2.com/v2/commerce/prices');
+    const allItemIds = priceData.map(entry => entry.id).slice(0, 200); // Limit to first 200 for demo
 
-    itemsData = itemIds;
-    listingsData = listings;
-    pricesData = prices;
-    recipesData = recipes;
+    // Step 2: Get item details (name, icon)
+    const detailChunks = [];
+    for (let i = 0; i < allItemIds.length; i += 100) {
+      const chunk = allItemIds.slice(i, i + 100);
+      const details = await fetchJSON(`https://api.guildwars2.com/v2/items?ids=${chunk.join(',')}`);
+      detailChunks.push(...details);
+    }
 
-    resultsEl.innerHTML = `<p style="color:#3ea6ff">✅ Data loaded successfully. Click a button below.</p>`;
+    // Step 3: Merge prices with details
+    const combined = priceData
+      .filter(p => allItemIds.includes(p.id) && p.buys.unit_price > 0 && p.sells.unit_price > 0)
+      .map(p => {
+        const detail = detailChunks.find(d => d.id === p.id);
+        const profitRaw = p.sells.unit_price * 0.85 - p.buys.unit_price; // 15% TP fee
+        return {
+          id: p.id,
+          name: detail?.name || 'Unknown',
+          icon: detail?.icon || '',
+          buy: p.buys.unit_price,
+          sell: p.sells.unit_price,
+          profit: profitRaw
+        };
+      })
+      .filter(item => item.profit > 0)
+      .sort((a, b) => b.profit - a.profit)
+      .slice(0, 20);
+
+    // Step 4: Display results
+    displayResults(combined);
   } catch (err) {
-    resultsEl.innerHTML = `<p style="color:red">❌ Failed to load data: ${err.message}</p>`;
-  } finally {
-    showLoading(false);
+    hideLoading();
+    results.innerHTML = `<p style="color:red;">Failed to load data: ${err.message}</p>`;
   }
 }
 
-function copperToGSC(copper) {
-  const g = Math.floor(copper / 10000);
-  const s = Math.floor((copper % 10000) / 100);
-  const c = copper % 100;
-  return `${g}g ${s}s ${c}c`;
-}
-
-function getListingData(id) {
-  return listingsData.find(item => item.id === id);
-}
-
-function getPriceData(id) {
-  return pricesData.find(item => item.id === id);
-}
-
-function calcFlipList() {
-  const profits = [];
-
-  for (let i = 0; i < itemsData.length; i++) {
-    const itemId = itemsData[i];
-    const listing = getListingData(itemId);
-    if (!listing || listing.buy_order.unit_price === 0) continue;
-
-    const priceData = getPriceData(itemId);
-    if (!priceData || priceData.sells.unit_price === 0) continue;
-
-    const buy = listing.buy_order.unit_price;
-    const sell = priceData.sells.unit_price;
-    const fee = Math.floor(sell * 0.15);
-    const profit = sell - fee - buy;
-
-    if (profit > 0) profits.push({ id: itemId, buy, sell, profit });
-  }
-  profits.sort((a, b) => b.profit - a.profit);
-  return profits.slice(0, 20); // top 20
-}
-
-async function displayFlipResults() {
-  showLoading(true);
-  resultsEl.innerHTML = '';
-
-  const flipList = calcFlipList();
-  if (!flipList.length) {
-    resultsEl.innerHTML = `<p style="color:#ff8c00">No profitable flips found.</p>`;
-    showLoading(false);
+function displayResults(items) {
+  hideLoading();
+  if (!items.length) {
+    results.innerHTML = '<p>No profitable items found.</p>';
     return;
   }
 
-  const itemDetails = await Promise.all(
-    flipList.map(f => fetchJSON(`${API_BASE}/items/${f.id}`))
-  );
-
-  let html = '<table><thead><tr><th>Item</th><th>Buy Order</th><th>Sell Listing</th><th>Profit</th></tr></thead><tbody>';
-  flipList.forEach((f, idx) => {
-    const name = itemDetails[idx]?.name || 'Unknown';
-    html += `<tr>
-      <td>${name}</td>
-      <td>${copperToGSC(f.buy)}</td>
-      <td>${copperToGSC(f.sell)}</td>
-      <td>${copperToGSC(f.profit)}</td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  resultsEl.innerHTML = html;
-  showLoading(false);
+  const table = document.createElement('table');
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Buy Order</th>
+        <th>Sell Price</th>
+        <th>Profit</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${items.map(item => `
+        <tr>
+          <td>
+            <img src="${item.icon}" alt="${item.name}" width="24" height="24" style="vertical-align:middle; margin-right:8px;" />
+            ${item.name}
+          </td>
+          <td>${formatCurrency(item.buy)}</td>
+          <td>${formatCurrency(item.sell)}</td>
+          <td style="color:lime;">${formatCurrency(item.profit)}</td>
+        </tr>
+      `).join('')}
+    </tbody>
+  `;
+  results.appendChild(table);
 }
 
-document.getElementById('flip-btn').addEventListener('click', () => {
-  setActive('flip');
-  displayFlipResults();
-});
+function formatCurrency(value) {
+  const gold = Math.floor(value / 10000);
+  const silver = Math.floor((value % 10000) / 100);
+  const copper = value % 100;
 
-// Placeholder handlers
-document.getElementById('craft-btn').addEventListener('click', () => setActive('craft'));
-document.getElementById('salvage-btn').addEventListener('click', () => setActive('salvage'));
-document.getElementById('forge-btn').addEventListener('click', () => setActive('forge'));
-
-function setActive(mode) {
-  ['flip-btn','craft-btn','salvage-btn','forge-btn'].forEach(id => {
-    document.getElementById(id).classList.toggle('active', id === mode + '-btn');
-  });
+  return `${gold}🪙 ${silver}🥈 ${copper}🥉`;
 }
-
-window.addEventListener('load', loadAllData);
