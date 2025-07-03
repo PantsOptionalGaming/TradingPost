@@ -31,6 +31,7 @@ function formatCoins(copper) {
 
 // Fetch Flip data and display top 20 profitable flips
 async function fetchFlipData() {
+  console.log('Sample price data:', priceData.slice(0, 5));
   showLoading();
 
   // Manage button active state
@@ -40,11 +41,11 @@ async function fetchFlipData() {
     // Get all prices
     const priceData = await fetchJSON('https://api.guildwars2.com/v2/commerce/prices');
 
-    // Filter valid ids only and limit to first 200
+    // Filter valid ids only and limit to first 20000
     const allItemIds = priceData
       .map(entry => entry.id)
       .filter(id => typeof id === 'number' && !isNaN(id))
-      .slice(0, 200);
+      .slice(0, 20000);
 
     // Fetch item details in batches (max 200 per request)
     const chunkSize = 100;
