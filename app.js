@@ -44,7 +44,11 @@ async function fetchJSON(url) {
 async function fetchFlipData() {
   try {
     const priceData = await fetchJSON('https://api.guildwars2.com/v2/commerce/prices');
-    const allItemIds = priceData.map(entry => entry.id).slice(0, 200); // Chunk to avoid limits
+  const allItemIds = priceData
+    .map(entry => entry.id)
+    .filter(id => typeof id === 'number' && !isNaN(id))
+    .slice(0, 200);
+
 
     const detailChunks = [];
     for (let i = 0; i < allItemIds.length; i += 100) {
