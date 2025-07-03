@@ -8,15 +8,14 @@
 </head>
 <body>
   <h1>POG Trading Post Suggestions</h1>
-  <div class="button-group">
-    <button onclick="loadFlips()">Flip</button>
-    <button onclick="loadCrafts()">Craft</button>
-    <button onclick="loadSalvage()">Salvage</button>
-    <button onclick="loadForge()">Mystic Forge</button>
-    <button onclick="loadTrending()">Trending</button>
+
+  <div class="button-bar">
+    <button id="flipBtn">💰 Flip</button>
+    <button id="craftBtn">🛠️ Craft</button>
   </div>
-  <div id="loading" style="display:none;">Loading data, please wait...</div>
-  <div id="results"></div>
-  <script src="script.js"></script>
+
+  <div id="loading" style="display:none; margin-top: 20px; font-weight: bold; color: orange;">Loading...</div>
+  <div id="results" class="results"></div>
 </body>
+
 </html>
