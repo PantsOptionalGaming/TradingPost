@@ -2,7 +2,7 @@ const API_BASE = 'https://api.guildwars2.com/v2';
 const TP_LISTINGS = `${API_BASE}/commerce/listings`;
 const TP_PRICES = `${API_BASE}/commerce/prices`;
 const RECIPES = `${API_BASE}/recipes`;
-const FORGE_RECIPES = `${API_BASE}/recipes`; // No specific forge endpoint exists, this is the right one
+const FORGE_RECIPES = `${API_BASE}/recipes`; // correct endpoint for recipes
 
 let itemsData = [];
 let listingsData = [];
@@ -10,33 +10,28 @@ let pricesData = [];
 let recipesData = [];
 
 const resultsEl = document.getElementById('results');
+const loadingEl = document.getElementById('loading');
 
 function showLoading(show) {
-  const loadingEl = document.getElementById('loading');
-  if (loadingEl) loadingEl.style.display = show ? 'block' : 'none';
+  loadingEl.classList.toggle('hidden', !show);
 }
 
 async function fetchJSON(url) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`API error: ${response.status}`);
-  return response.json();
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
 }
 
 async function loadAllData() {
-  try {
-    showLoading(true);
-    resultsEl.innerHTML = ''; // clear old content
+  showLoading(true);
+  resultsEl.innerHTML = '';
 
-    const [
-      itemIds,
-      listings,
-      prices,
-      recipes
-    ] = await Promise.all([
+  try {
+    const [itemIds, listings, prices, recipes] = await Promise.all([
       fetchJSON(`${API_BASE}/items?ids=all`),
       fetchJSON(TP_LISTINGS),
       fetchJSON(TP_PRICES),
-      fetchJSON(RECIPES)
+      fetchJSON(RECIPES),
     ]);
 
     itemsData = itemIds;
@@ -44,35 +39,95 @@ async function loadAllData() {
     pricesData = prices;
     recipesData = recipes;
 
-    resultsEl.innerHTML = '<p style="color:lime">✅ Data loaded successfully. Click a button to begin.</p>';
+    resultsEl.innerHTML = `<p style="color:#3ea6ff">✅ Data loaded successfully. Click a button below.</p>`;
   } catch (err) {
-    console.error('Data Load Error:', err);
     resultsEl.innerHTML = `<p style="color:red">❌ Failed to load data: ${err.message}</p>`;
   } finally {
     showLoading(false);
   }
 }
 
-// Example button handlers
+function copperToGSC(copper) {
+  const g = Math.floor(copper / 10000);
+  const s = Math.floor((copper % 10000) / 100);
+  const c = copper % 100;
+  return `${g}g ${s}s ${c}c`;
+}
+
+function getListingData(id) {
+  return listingsData.find(item => item.id === id);
+}
+
+function getPriceData(id) {
+  return pricesData.find(item => item.id === id);
+}
+
+function calcFlipList() {
+  const profits = [];
+
+  for (let i = 0; i < itemsData.length; i++) {
+    const itemId = itemsData[i];
+    const listing = getListingData(itemId);
+    if (!listing || listing.buy_order.unit_price === 0) continue;
+
+    const priceData = getPriceData(itemId);
+    if (!priceData || priceData.sells.unit_price === 0) continue;
+
+    const buy = listing.buy_order.unit_price;
+    const sell = priceData.sells.unit_price;
+    const fee = Math.floor(sell * 0.15);
+    const profit = sell - fee - buy;
+
+    if (profit > 0) profits.push({ id: itemId, buy, sell, profit });
+  }
+  profits.sort((a, b) => b.profit - a.profit);
+  return profits.slice(0, 20); // top 20
+}
+
+async function displayFlipResults() {
+  showLoading(true);
+  resultsEl.innerHTML = '';
+
+  const flipList = calcFlipList();
+  if (!flipList.length) {
+    resultsEl.innerHTML = `<p style="color:#ff8c00">No profitable flips found.</p>`;
+    showLoading(false);
+    return;
+  }
+
+  const itemDetails = await Promise.all(
+    flipList.map(f => fetchJSON(`${API_BASE}/items/${f.id}`))
+  );
+
+  let html = '<table><thead><tr><th>Item</th><th>Buy Order</th><th>Sell Listing</th><th>Profit</th></tr></thead><tbody>';
+  flipList.forEach((f, idx) => {
+    const name = itemDetails[idx]?.name || 'Unknown';
+    html += `<tr>
+      <td>${name}</td>
+      <td>${copperToGSC(f.buy)}</td>
+      <td>${copperToGSC(f.sell)}</td>
+      <td>${copperToGSC(f.profit)}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  resultsEl.innerHTML = html;
+  showLoading(false);
+}
+
 document.getElementById('flip-btn').addEventListener('click', () => {
-  showLoading(true);
-  resultsEl.innerHTML = '';
-  setTimeout(() => {
-    displayFlipResults(); // Your custom function that analyzes data
-    showLoading(false);
-  }, 500);
+  setActive('flip');
+  displayFlipResults();
 });
 
-document.getElementById('craft-btn').addEventListener('click', () => {
-  showLoading(true);
-  resultsEl.innerHTML = '';
-  setTimeout(() => {
-    displayCraftResults(); // Your custom function that analyzes data
-    showLoading(false);
-  }, 500);
-});
+// Placeholder handlers
+document.getElementById('craft-btn').addEventListener('click', () => setActive('craft'));
+document.getElementById('salvage-btn').addEventListener('click', () => setActive('salvage'));
+document.getElementById('forge-btn').addEventListener('click', () => setActive('forge'));
 
-// You can define other buttons (Salvage, Mystic Forge) below similarly
+function setActive(mode) {
+  ['flip-btn','craft-btn','salvage-btn','forge-btn'].forEach(id => {
+    document.getElementById(id).classList.toggle('active', id === mode + '-btn');
+  });
+}
 
-// Run data fetch on load
 window.addEventListener('load', loadAllData);
