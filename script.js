@@ -1,183 +1,189 @@
-const loading = document.getElementById('loading');
-const results = document.getElementById('results');
-
-function showLoading() {
-  loading.style.display = 'block';
-  results.innerHTML = '';
-}
-
-function hideLoading() {
-  loading.style.display = 'none';
-}
-
-function showResults(items) {
-  if (!items.length) {
-    results.innerHTML = '<p>No profitable items found.</p>';
-    return;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GW2 Builds Viewer</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 10px;
   }
-  results.innerHTML = items.map(item => `
-    <div class="result-item">
-      <strong>${item.name}</strong><br/>
-      Buy: ${item.buy}c | Sell: ${item.sell}c | Profit: ${item.profit}c
-    </div>
-  `).join('');
-}
-
-async function loadFlips() {
-  showLoading();
-  try {
-    const listingsRes = await fetch('https://api.guildwars2.com/v2/commerce/listings');
-    const ids = await listingsRes.json();
-    const sampleIds = ids.slice(0, 20);
-
-    const [items, prices] = await Promise.all([
-      fetch(`https://api.guildwars2.com/v2/items?ids=${sampleIds.join(',')}`).then(r => r.json()),
-      fetch(`https://api.guildwars2.com/v2/commerce/prices?ids=${sampleIds.join(',')}`).then(r => r.json())
-    ]);
-
-    const resultsData = sampleIds.map(id => {
-      const item = items.find(i => i.id === id);
-      const price = prices.find(p => p.id === id);
-      if (!item || !price || !price.buys.unit_price || !price.sells.unit_price) return null;
-
-      const buy = price.buys.unit_price;
-      const sell = price.sells.unit_price;
-      const afterFees = Math.floor(sell * 0.85);
-      const profit = afterFees - buy;
-
-      return {
-        name: item.name,
-        buy: buy,
-        sell: sell,
-        profit: profit
-      };
-    }).filter(item => item && item.profit > 0);
-
-    hideLoading();
-    showResults(resultsData.sort((a, b) => b.profit - a.profit));
-  } catch (err) {
-    hideLoading();
-    results.innerHTML = '<p>Error fetching data. Try again later.</p>';
-    console.error(err);
+  h1 {
+    margin-bottom: 20px;
   }
-}
+  .button-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 25px;
+  }
+  button.build-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 110px;
+    padding: 8px;
+    border: 1px solid #0078d7;
+    border-radius: 8px;
+    background-color: white;
+    cursor: pointer;
+    font-weight: bold;
+    color: #0078d7;
+    transition: background-color 0.2s, color 0.2s;
+  }
+  button.build-btn:hover {
+    background-color: #0078d7;
+    color: white;
+  }
+  button.build-btn img {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 6px;
+    object-fit: contain;
+  }
+  #loading {
+    color: #0066cc;
+    font-weight: bold;
+    margin-top: 10px;
+    display: none;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 15px;
+  }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 6px 8px;
+    text-align: left;
+  }
+  th {
+    background-color: #f0f0f0;
+  }
+</style>
+</head>
+<body>
 
-function loadCrafts() {
-  showLoading();
-  setTimeout(() => {
-    hideLoading();
-    results.innerHTML = '<p>Crafting logic not implemented yet.</p>';
-  }, 1000);
-}
+<h1>Guild Wars 2 Builds</h1>
 
-function loadSalvage() {
-  showLoading();
-  setTimeout(() => {
-    hideLoading();
-    results.innerHTML = '<p>Salvage logic not implemented yet.</p>';
-  }, 1000);
-}
+<!-- Professions -->
+<div><strong>Professions:</strong></div>
+<div class="button-grid" id="profession-buttons">
+  <button class="build-btn" onclick="loadBuilds('profession', 'Warrior')">
+    <img src="https://drive.google.com/uc?export=view&id=1YQtPPuvOcf0CmoIxHSzf-7c-NwFQdMW1" alt="Warrior">
+    Warrior
+  </button>
+  <button class="build-btn" onclick="loadBuilds('profession', 'Guardian')">
+    <img src="https://drive.google.com/uc?export=view&id=1VmFmnzxzztl1YvHPzeOAtyWW7gwAQ0es" alt="Guardian">
+    Guardian
+  </button>
+  <button class="build-btn" onclick="loadBuilds('profession', 'Elementalist')">
+    <img src="https://drive.google.com/uc?export=view&id=1w-kC30snHKKj-t9pHN6LCVgZBrczG0p3" alt="Elementalist">
+    Elementalist
+  </button>
+  <button class="build-btn" onclick="loadBuilds('profession', 'Engineer')">
+    <img src="https://drive.google.com/uc?export=view&id=14ESX5xzf2oJXH10_Z9qIR34p3iUd5gXy" alt="Engineer">
+    Engineer
+  </button>
+  <button class="build-btn" onclick="loadBuilds('profession', 'Mesmer')">
+    <img src="https://drive.google.com/uc?export=view&id=1-NPzMy3FyNMlFFeE1Jl1wbu1HkJpjM6N" alt="Mesmer">
+    Mesmer
+  </button>
+  <button class="build-btn" onclick="loadBuilds('profession', 'Necromancer')">
+    <img src="https://drive.google.com/uc?export=view&id=13EsLnddq9CCd-gaOtiKuC2fVn2ar0RGk" alt="Necromancer">
+    Necromancer
+  </button>
+  <button class="build-btn" onclick="loadBuilds('profession', 'Ranger')">
+    <img src="https://drive.google.com/uc?export=view&id=1cqFYvSs8R9j6l5dVHiD3jMA4RZ5vkfcG" alt="Ranger">
+    Ranger
+  </button>
+  <button class="build-btn" onclick="loadBuilds('profession', 'Revenant')">
+    <img src="https://drive.google.com/uc?export=view&id=1urzrqdIeLtlq9NXeEPKkWejC5L7lBOtR" alt="Revenant">
+    Revenant
+  </button>
+  <button class="build-btn" onclick="loadBuilds('profession', 'Thief')">
+    <img src="https://drive.google.com/uc?export=view&id=1Z17qNALbjfqOZcZklmfEulpg0LXcrrqa" alt="Thief">
+    Thief
+  </button>
+</div>
 
-function loadForge() {
-  showLoading();
-  setTimeout(() => {
-    hideLoading();
-    results.innerHTML = '<p>Mystic Forge logic not implemented yet.</p>';
-  }, 1000);
-}
+<!-- Roles -->
+<div><strong>Roles:</strong></div>
+<div class="button-grid" id="role-buttons">
+  <button class="build-btn" onclick="loadBuilds('role', 'Support')">
+    <img src="https://drive.google.com/uc?export=view&id=1bxzRtE9gzuMOWuWCfpupIOD8zU5ozNS4" alt="Support">
+    Support
+  </button>
+  <button class="build-btn" onclick="loadBuilds('role', 'Utility Support')">
+    <img src="https://drive.google.com/uc?export=view&id=1KOiYOy3C4h2wo5Iw6gkLMqCIdCelmEUx" alt="Utility Support">
+    Utility Support
+  </button>
+  <button class="build-btn" onclick="loadBuilds('role', 'FrontLineDPS')">
+    <img src="https://drive.google.com/uc?export=view&id=1HTxQ6pXQ7ILm_10mLX-uonqNamEBVVTY" alt="FrontLine DPS">
+    FrontLine DPS
+  </button>
+  <button class="build-btn" onclick="loadBuilds('role', 'BackLineDPS')">
+    <img src="https://drive.google.com/uc?export=view&id=1B6v0j35147u7U-LA2PYBjFHk5LSm9Qt8" alt="BackLine DPS">
+    BackLine DPS
+  </button>
+  <button class="build-btn" onclick="loadBuilds('role', 'BoonStrip')">
+    <img src="https://drive.google.com/uc?export=view&id=1QYKgrBpcWTS1JKD6nvy-tgKTbPOUWkAZ" alt="BoonStrip">
+    BoonStrip
+  </button>
+</div>
 
-function loadTrending() {
-  showLoading();
-  setTimeout(() => {
-    hideLoading();
-    results.innerHTML = '<p>Trending logic not implemented yet.</p>';
-  }, 1000);
-}
+<div id="loading">Loading builds...</div>
 
-async function handleCraft() {
-  showLoading(true);
+<table id="build-table"></table>
 
-  try {
-    const recipes = await fetchJSON('https://api.guildwars2.com/v2/recipes');
-    const limitedRecipes = recipes.slice(0, 200); // Limit to first 200 recipes for speed
+<script>
+  const scriptURL = "https://script.google.com/macros/s/AKfycbwAP2IrzRJtHMsJOu-xCLBLhlXrNR1tvRM76-Z_lw8yUkbnus4z-qtryeegcO6OEtmT/exec";
 
-    const recipeData = await fetchJSON(`https://api.guildwars2.com/v2/recipes?ids=${limitedRecipes.join(',')}`);
-    const itemIds = [...new Set(recipeData.map(r => r.output_item_id).concat(recipeData.flatMap(r => r.ingredients.map(i => i.item_id))))];
+  function loadBuilds(type, value) {
+    const loading = document.getElementById('loading');
+    const table = document.getElementById('build-table');
+    loading.style.display = 'block';
+    table.innerHTML = '';
 
-    const [itemDetails, prices] = await Promise.all([
-      fetchJSON(`https://api.guildwars2.com/v2/items?ids=${itemIds.join(',')}`),
-      fetchJSON(`https://api.guildwars2.com/v2/commerce/prices?ids=${itemIds.join(',')}`)
-    ]);
+    const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
 
-    const priceMap = Object.fromEntries(prices.map(p => [p.id, p]));
-    const itemMap = Object.fromEntries(itemDetails.map(i => [i.id, i]));
+    window[callbackName] = function(data) {
+      delete window[callbackName];
+      loading.style.display = 'none';
 
-    const profits = [];
-
-    for (const recipe of recipeData) {
-      const outputPrice = priceMap[recipe.output_item_id];
-      const outputItem = itemMap[recipe.output_item_id];
-
-      if (!outputPrice || !outputPrice.sells || !outputPrice.sells.unit_price || outputItem.flags?.includes('AccountBound')) continue;
-
-      const sellPrice = outputPrice.sells.unit_price;
-      const sellAfterFee = Math.floor(sellPrice * 0.85);
-
-      let cost = 0;
-      let missing = false;
-
-      for (const ing of recipe.ingredients) {
-        const p = priceMap[ing.item_id];
-        if (!p || !p.buys || !p.buys.unit_price) {
-          missing = true;
-          break;
-        }
-        cost += p.buys.unit_price * ing.count;
+      if (!data || !data.length) {
+        table.innerHTML = '<tr><td>No builds found.</td></tr>';
+        return;
       }
 
-      if (missing) continue;
+      const headers = data[0];
+      const rows = data.slice(1);
 
-      const profit = sellAfterFee - cost;
-      if (profit > 0) {
-        profits.push({
-          name: outputItem.name,
-          profit,
-          cost,
-          sell: sellPrice,
-          ingredients: recipe.ingredients.map(i => {
-            const ingItem = itemMap[i.item_id];
-            const ingPrice = priceMap[i.item_id]?.buys?.unit_price || 0;
-            return `${i.count}x ${ingItem?.name || 'Unknown'} @ ${formatCopper(ingPrice)}`;
-          }).join(', ')
-        });
-      }
-    }
+      let html = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+      rows.forEach(row => {
+        html += '<tr>' + row.map(cell => {
+          if (typeof cell === 'string' && cell.startsWith('http')) {
+            return `<td><a href="${cell}" target="_blank" rel="noopener noreferrer">Link</a></td>`;
+          }
+          return `<td>${cell}</td>`;
+        }).join('') + '</tr>';
+      });
 
-    profits.sort((a, b) => b.profit - a.profit);
-    const top = profits.slice(0, 20);
+      table.innerHTML = html;
+    };
 
-    showResults(top, 'Crafting');
-  } catch (err) {
-    showError("Error loading crafting data: " + err.message);
+    const script = document.createElement('script');
+    script.src = `${scriptURL}?filterType=${type}&filterValue=${encodeURIComponent(value)}&callback=${callbackName}`;
+    script.onerror = function() {
+      loading.style.display = 'none';
+      table.innerHTML = '<tr><td>Error loading builds.</td></tr>';
+    };
+    document.body.appendChild(script);
   }
+</script>
 
-  showLoading(false);
-}
-
-
-function showResults(data, title) {
-  const results = document.getElementById('results');
-  results.innerHTML = `<h2>Top ${title} Opportunities</h2><ul>` +
-    data.map(item =>
-      `<li><strong>${item.name}</strong> - Profit: ${formatCopper(item.profit)} | Cost: ${formatCopper(item.cost)} | Sell: ${formatCopper(item.sell)}<br>
-      <small>${item.ingredients || ''}</small></li>`
-    ).join('') + '</ul>';
-}
-
-function formatCopper(value) {
-  const gold = Math.floor(value / 10000);
-  const silver = Math.floor((value % 10000) / 100);
-  const copper = value % 100;
-  return `${gold}g ${silver}s ${copper}c`;
-}
-
+</body>
+</html>
