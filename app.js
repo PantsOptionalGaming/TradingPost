@@ -1,8 +1,8 @@
 const API_BASE = 'https://api.guildwars2.com/v2';
-const TP_LISTINGS = 'https://api.guildwars2.com/v2/commerce/listings';
-const TP_PRICES = 'https://api.guildwars2.com/v2/commerce/prices';
-const RECIPES = 'https://api.guildwars2.com/v2/recipes';
-const FORGE_RECIPES = 'https://api.guildwars2.com/v2/mystic-forge/recipes';
+const TP_LISTINGS    = 'https://api.guildwars2.com/v2/commerce/listings';
+const TP_PRICES      = 'https://api.guildwars2.com/v2/commerce/prices';
+const RECIPES        = 'https://api.guildwars2.com/v2/recipes';
+const FORGE_RECIPES  = 'https://api.guildwars2.com/v2/mystic-forge/recipes';
 
 const MODES = ['flip', 'craft', 'salvage', 'forge'];
 const RESULTS_LIMIT = 20;
@@ -54,18 +54,18 @@ async function loadAllData() {
   showLoading(true);
 
   // Parallel fetch
-  const [
+ const [
   items,
   listings,
   recipes,
   forgeRecipes,
   prices
 ] = await Promise.all([
-  fetchJSON(`${API_BASE}/items`),
-  fetchJSON(`${TP_LISTINGS}`),
-  fetchJSON(`${RECIPES}`),
-  fetchJSON(`${FORGE_RECIPES}`),
-  fetchJSON(`${TP_PRICES}`)
+  fetchJSON(`${API_BASE}/items?ids=all`),
+  fetchJSON(TP_LISTINGS),
+  fetchJSON(RECIPES),
+  fetchJSON(FORGE_RECIPES),
+  fetchJSON(TP_PRICES)
 ]);
 
   itemsData = items;
