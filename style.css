@@ -1,57 +1,85 @@
+/* General body styling */
 body {
+  background-color: #1e1e1e;
+  color: #ffffff;
   font-family: Arial, sans-serif;
-  padding: 20px;
-  background-color: #f4f4f4;
-}
-
-h1 {
+  margin: 20px;
   text-align: center;
-  color: #ffcc00;
 }
 
-.button-group {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
+/* Main heading (like POG Builds) */
+h1, h2 {
+  font-weight: 900;
+  text-transform: uppercase;
   margin-bottom: 20px;
+  text-shadow: 0 0 8px #000;
 }
 
+/* Main title yellow */
+h1 {
+  color: #ffd700; /* bright yellow */
+  font-size: 2.8rem;
+}
+
+/* Section headings orange */
+h2 {
+  color: #ff8c00; /* dark orange */
+  font-size: 1.8rem;
+  margin-top: 30px;
+  margin-bottom: 15px;
+}
+
+/* Buttons styling */
 button {
-  padding: 10px 20px;
-  font-size: 16px;
-  background-color: #007BFF;
-  color: #000;
+  background-color: #2c68c5; /* blue */
+  color: #000000; /* black text */
+  font-weight: bold;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
+  padding: 12px 24px;
+  margin: 10px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  box-shadow: 0 3px 8px rgba(44, 104, 197, 0.6);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  text-shadow: 1px 1px 0 #000000;
+  user-select: none;
+  min-width: 140px;
+  font-size: 1rem;
 }
 
+/* Button hover effect: glow and scale */
 button:hover {
-  background-color: #339dff;
-  transform: scale(1.05);
-  box-shadow: 0 0 8px #66c2ff;
+  transform: scale(1.1);
+  box-shadow: 0 0 15px 3px #3a8aff;
 }
 
-button:active {
-  background-color: #0056b3;
+/* Button active state: darker blue */
+button:active, button.selected {
+  background-color: #1f3e7a;
+  box-shadow: 0 0 20px 5px #1f3e7a;
+  color: #ffffff;
+  text-shadow: 1px 1px 2px #000000;
 }
 
+/* Loading text style */
+#loading {
+  color: #3ea6ff;
+  font-weight: bold;
+  margin-top: 20px;
+  font-size: 1.2rem;
+  text-shadow: 0 0 6px #3ea6ff;
+  display: none;
+}
+
+/* Result container styling */
 #results {
-  max-width: 800px;
-  margin: auto;
-  background: white;
-  padding: 15px;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-top: 25px;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
+  color: #fff;
+  font-size: 1rem;
 }
 
-.result-item {
-  padding: 10px;
-  border-bottom: 1px solid #ccc;
-}
-
-.result-item:last-child {
-  border-bottom: none;
-}
+/* Table styli*
