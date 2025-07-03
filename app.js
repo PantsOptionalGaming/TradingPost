@@ -43,11 +43,9 @@ async function fetchJSON(url) {
 
 async function fetchFlipData() {
   try {
-    // Step 1: Get list of tradeable item IDs
     const priceData = await fetchJSON('https://api.guildwars2.com/v2/commerce/prices');
-    const allItemIds = priceData.map(entry => entry.id).slice(0, 200); // Limit to first 200 for demo
+    const allItemIds = priceData.map(entry => entry.id).slice(0, 200); // Chunk to avoid limits
 
-    // Step 2: Get item details (name, icon)
     const detailChunks = [];
     for (let i = 0; i < allItemIds.length; i += 100) {
       const chunk = allItemIds.slice(i, i + 100);
@@ -55,12 +53,11 @@ async function fetchFlipData() {
       detailChunks.push(...details);
     }
 
-    // Step 3: Merge prices with details
     const combined = priceData
       .filter(p => allItemIds.includes(p.id) && p.buys.unit_price > 0 && p.sells.unit_price > 0)
       .map(p => {
         const detail = detailChunks.find(d => d.id === p.id);
-        const profitRaw = p.sells.unit_price * 0.85 - p.buys.unit_price; // 15% TP fee
+        const profitRaw = p.sells.unit_price * 0.85 - p.buys.unit_price;
         return {
           id: p.id,
           name: detail?.name || 'Unknown',
@@ -74,7 +71,6 @@ async function fetchFlipData() {
       .sort((a, b) => b.profit - a.profit)
       .slice(0, 20);
 
-    // Step 4: Display results
     displayResults(combined);
   } catch (err) {
     hideLoading();
