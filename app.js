@@ -55,18 +55,18 @@ async function loadAllData() {
 
   // Parallel fetch
   const [
-    items,
-    listings,
-    recipes,
-    forgeRecipes,
-    prices
-  ] = await Promise.all([
-    fetchJSON(`${API_BASE}/items`),
-    fetchJSON(`${TP_BASE}`),
-    fetchJSON(`${RECIPES}`),
-    fetchJSON(`${FORGE_RECIPES}`),
-    fetchJSON(`${TP_PRICES}`)
-  ]);
+  items,
+  listings,
+  recipes,
+  forgeRecipes,
+  prices
+] = await Promise.all([
+  fetchJSON(`${API_BASE}/items`),
+  fetchJSON(`${TP_LISTINGS}`),
+  fetchJSON(`${RECIPES}`),
+  fetchJSON(`${FORGE_RECIPES}`),
+  fetchJSON(`${TP_PRICES}`)
+]);
 
   itemsData = items;
   listingsData = listings;
