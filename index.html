@@ -1,19 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GW2 Trade Profits</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POG Trading Post Suggestions</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>GW2 Trade Profits</h1>
-  <div class="button-group">
-    <button onclick="loadFlips()">Flip</button>
-    <button onclick="loadCrafts()">Craft</button>
+  <h1>POG Trading Post Suggestions</h1>
+  <div class="buttons">
+    <button onclick="loadFlip()">Flip</button>
+    <button onclick="loadCraft()">Craft</button>
+    <button onclick="loadSalvage()">Salvage</button>
+    <button onclick="loadForge()">Mystic Forge</button>
+    <button onclick="loadTrending()">Trending</button>
   </div>
-  <div id="loading">Loading...</div>
-  <table id="results"></table>
+  <div id="loading" style="display:none">Loading data...</div>
+  <div id="results"></div>
   <script src="script.js"></script>
 </body>
 </html>
